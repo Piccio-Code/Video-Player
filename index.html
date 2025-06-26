@@ -154,15 +154,6 @@
                 }
             });
 
-            music.addEventListener('timeupdate', () => {
-                const startButton = document.getElementById('start');
-                const stopButton = document.getElementById('stop');
-                if (startButton.dataset.startValue && stopButton.dataset.stopValue) {
-                    if (music.currentTime > stopButton.dataset.stopValue || music.currentTime < startButton.dataset.startValue) {
-                        music.currentTime = startButton.dataset.startValue;
-                    }
-                }
-            });
 
             function parseTimeInput(input) {
                 if (!input) return null;
@@ -378,6 +369,18 @@
                     music_element.playbackRate = playback_rate / 100;
                 }
             }
+
+            music.addEventListener('timeupdate', () => {
+                const startButton = document.getElementById('start');
+                const stopButton = document.getElementById('stop');
+                if (startButton.dataset.startValue && stopButton.dataset.stopValue) {
+                    if (music.currentTime > stopButton.dataset.stopValue || music.currentTime < startButton.dataset.startValue) {
+                        music.currentTime = startButton.dataset.startValue;
+                        player.start(0, music.currentTime);
+                    }
+                }
+            });
+
         </script>
 	</body>
 </html>
