@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>Video Player</h1>
+            <p>Player video avanzato con controlli personalizzati</p>
+        </div>
+
+        <div id="player-container">
+            <button id="new-file">Nuovo File</button>
+            
+            <div>
+                <div>
+                    <video id="video" src="" width="800" height="450" controls muted autoplay></video>
+                </div>
+
+                <div>
+                    <div>
+                        <label>Velocità</label>
+                        <div>
+                            <input type="range" min="1" max="300" value="100" id="myRange">
+                            <div>
+                                <span id="current-pergentage-value">100%</span>
+                            </div>
+                        </div>
+                        <button id="reset-percentage">Reset</button>
+                    </div>
+
+                    <div>
+                        <label>Loop</label>
+                        <div>
+                            <div id="start-input-wrapper">
+                                <label>Inizio</label>
+                                <input type="text" id="start-time-input" placeholder="es. 30 o 1:30">
+                                <div id="start-error" style="display: none; color: red;">Tempo non valido</div>
+                            </div>
+                            <div id="stop-input-wrapper">
+                                <label>Fine</label>
+                                <input type="text" id="stop-time-input" placeholder="es. 90 o 2:30">
+                                <div id="stop-error" style="display: none; color: red;">Deve essere > tempo inizio</div>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="start" data-start-value=''>Dal Corrente</button>
+                            <button id="stop" data-stop-value=''>Al Corrente</button>
+                        </div>
+                        <div>
+                            <span>Inizio: <span id="start-value">--:--</span></span>
+                            <span>Fine: <span id="stop-value">--:--</span></span>
+                        </div>
+                        <button id="reset">Reset Loop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parse time function
+        function parseTimeInput(input) {
+            if (!input) return null;
+            
+            input = input.trim();
+            
+            if (/^\d+$/.test(input)) {
+                return parseInt(input);
+            }
+            
+            if (input.includes(':')) {
+                const parts = input.split(':').map(p => parseInt(p) || 0);
+                if (parts.length === 2) {
+                    return parts[0] * 60 + parts[1];
+                } else if (parts.length === 3) {
+                    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+                }
+            }
+            
+            return null;
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function validateTimes() {
+            const startInput = document.getElementById('start-time-input');
+            const stopInput = document.getElementById('stop-time-input');
+            const startError = document.getElementById('start-error');
+            const stopError = document.getElementById('stop-error');
+
+            const startTime = parseTimeInput(startInput.value);
+            const stopTime = parseTimeInput(stopInput.value);
+
+            // Reset errors
+            startError.style.display = 'none';
+            stopError.style.display = 'none';
+
+            let isValid = true;
+
+            if (startInput.value && startTime === null) {
+                startError.style.display = 'block';
+                isValid = false;
+            }
+
+            if (stopInput.value && stopTime === null) {
+                stopError.style.display = 'block';
+                isValid = false;
+            }
+
+            if (startTime !== null && stopTime !== null && startTime >= stopTime) {
+                stopError.style.display = 'block';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Carica automaticamente il video di default
+        const playerContainer = document.getElementById('player-container');
+        const video = document.getElementById('video');
+
+        // Carica il video di default all'avvio
+        function loadDefaultVideo() {
+            video.src = 'video.mp4';
+            video.play();
+        }
+
+        // Carica il video al caricamento della pagina
+        window.addEventListener('load', loadDefaultVideo);
+
+        // Loop logic per timeupdate
+        video.addEventListener('timeupdate', () => {
+            const startButton = document.getElementById('start');
+            const stopButton = document.getElementById('stop');
+            if (startButton.dataset.startValue && stopButton.dataset.stopValue) {
+                if (video.currentTime > stopButton.dataset.stopValue || video.currentTime < startButton.dataset.startValue) {
+                    video.currentTime = startButton.dataset.startValue;
+                }
+            }
+        });
+
+        // New file button - ricarica il video di default
+        document.getElementById('new-file').addEventListener('click', () => {
+            loadDefaultVideo();
+        });
+
+        // Speed control
+        const controller = document.getElementById('myRange');
+        controller.addEventListener('input', function() {
+            if (this.value <= 10) {
+                video.playbackRate = 0.1;
+            } else {
+                video.playbackRate = this.value / 100;
+            }
+            document.getElementById('current-pergentage-value').innerHTML = this.value + '%';
+        });
+
+        // Time input handlers with validation
+        document.getElementById('start-time-input').addEventListener('input', function() {
+            validateTimes();
+            const time = parseTimeInput(this.value);
+            if (time !== null && validateTimes()) {
+                video.currentTime = time;
+                document.getElementById('start').dataset.startValue = time;
+                document.getElementById('start-value').innerHTML = formatTime(time);
+            }
+        });
+
+        document.getElementById('stop-time-input').addEventListener('input', function() {
+            validateTimes();
+            const time = parseTimeInput(this.value);
+            if (time !== null && validateTimes()) {
+                document.getElementById('stop').dataset.stopValue = time;
+                document.getElementById('stop-value').innerHTML = formatTime(time);
+            }
+        });
+
+        // Loop controls
+        const startButton = document.getElementById('start');
+        const stopButton = document.getElementById('stop');
+        const resetButton = document.getElementById('reset');
+        
+        startButton.addEventListener('click', function() {
+            this.dataset.startValue = video.currentTime;
+            document.getElementById('start-value').innerHTML = formatTime(this.dataset.startValue);
+        });
+
+        stopButton.addEventListener('click', function() {
+            this.dataset.stopValue = video.currentTime;
+            document.getElementById('stop-value').innerHTML = formatTime(this.dataset.stopValue);
+        });
+
+        resetButton.addEventListener('click', function() {
+            startButton.dataset.startValue = '';
+            stopButton.dataset.stopValue = '';
+            document.getElementById('start-value').innerHTML = '--:--';
+            document.getElementById('stop-value').innerHTML = '--:--';
+            document.getElementById('start-time-input').value = '';
+            document.getElementById('stop-time-input').value = '';
+            validateTimes();
+        });
+
+        // Reset speed
+        const resetPercentageButton = document.getElementById('reset-percentage');
+        resetPercentageButton.addEventListener('click', function() {
+            controller.value = 100;
+            video.playbackRate = 1;
+            document.getElementById('current-pergentage-value').innerHTML = '100%';
+        });
+    </script>
+</body>
+</html>
