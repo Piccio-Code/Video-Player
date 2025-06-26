@@ -16,94 +16,105 @@
 				<p>Controllo avanzato dell'audio per i tuoi video</p>
 			</header>
 
-			<!-- File Upload Section -->
-			<section class="file-upload-section">
-				<div class="file-upload-wrapper">
-					<label class="file-upload-label">Seleziona un file video per iniziare</label>
-					<input type="file" id="video-file" class="file-input" accept="video/*">
-					<button class="file-button">📁 Scegli Video</button>
-				</div>
-			</section>
+			        <!-- File Upload Section -->
+        <section class="file-upload-section">
+            <div class="file-upload-wrapper">
+                <label class="file-upload-label">Seleziona un file video per iniziare</label>
+                <input type="file" id="video-file" class="file-input" accept="video/*">
+                <button class="file-button">📁 Scegli Video</button>
+            </div>
+        </section>
 
-			<!-- Video Player Section -->
-			<section class="video-section">
-				            <video id="music" class="video-player" controls muted controlslist="nodownload noremoteplayback noplaybackrate novolume">
-                Il tuo browser non supporta l'elemento video.
-            </video>
-			</section>
+        <!-- Loading Section -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Caricamento audio in corso...</div>
+                <div class="loading-subtext">Inizializzazione Tone.js</div>
+                <button id="loading-cancel" class="btn btn-secondary">Annulla</button>
+            </div>
+        </div>
 
-			<!-- Controls Section -->
-			<section id="controls" class="controls-section">
-				<div class="controls-grid">
-					
-					<!-- Pitch Control -->
-					<div class="control-group">
-						<h3 class="control-title">🎵 Controllo Tonalità</h3>
-						<div class="control-row">
-							<input type="range" id="pitch" class="slider" min="-12" max="12" value="0" step="1">
-							<input type="text" id="pitch-input" class="text-input" value="0">
-							<output id="pitch-output" class="output-value">0</output>
-						</div>
-					</div>
+			                <!-- Layout principale: Video + Controlli affiancati -->
+        <div class="main-content">
+            <!-- Sezione Video + Slider -->
+            <div class="video-and-sliders">
+                <!-- Video Player Section -->
+                <section class="video-section">
+                    <video id="music" class="video-player" controls muted controlslist="nodownload noremoteplayback noplaybackrate novolume">
+                        Il tuo browser non supporta l'elemento video.
+                    </video>
+                </section>
 
-					<!-- Playback Rate Control -->
-					<div class="control-group">
-						<h3 class="control-title">⚡ Velocità Riproduzione</h3>
-						<div class="control-row">
-							<input type="range" id="playback-rate" class="slider" min="10" max="300" value="100" step="1">
-							<input type="text" id="playback-rate-input" class="text-input" value="100">
-							<output id="playback-rate-output" class="output-value">100</output>
-						</div>
-					</div>
+                <!-- Slider sotto il video -->
+                <section class="sliders-section">
+                    <div class="sliders-grid">
+                        <!-- Pitch Control -->
+                        <div class="slider-control">
+                            <h4 class="slider-title">🎵 Tonalità</h4>
+                            <div class="slider-row">
+                                <input type="range" id="pitch" class="slider" min="-12" max="12" value="0" step="1">
+                                <input type="text" id="pitch-input" class="text-input" value="0">
+                            </div>
+                        </div>
 
-					<!-- Volume Control -->
-					<div class="control-group">
-						<h3 class="control-title">🔊 Volume</h3>
-						<div class="control-row">
-							<input type="range" id="volume" class="slider" min="0" max="100" value="100" step="1">
-							<input type="text" id="volume-input" class="text-input" value="100">
-							<output id="volume-output" class="output-value">100</output>
-						</div>
-					</div>
+                        <!-- Playback Rate Control -->
+                        <div class="slider-control">
+                            <h4 class="slider-title">⚡ Velocità</h4>
+                            <div class="slider-row">
+                                <input type="range" id="playback-rate" class="slider" min="10" max="300" value="100" step="1">
+                                <input type="text" id="playback-rate-input" class="text-input" value="100">
+                            </div>
+                        </div>
 
-					<!-- Loop Control -->
-					<div class="control-group loop-section">
-						<h3 class="control-title">🔄 Controllo Loop</h3>
-						
-						<div class="loop-inputs">
-							<div class="input-group">
-								<label class="input-label">Tempo Inizio</label>
-								<input type="text" id="start-time-input" class="time-input" placeholder="es. 30 o 1:30">
-								<div id="start-error" class="error-message">Tempo non valido</div>
-							</div>
-							<div class="input-group">
-								<label class="input-label">Tempo Fine</label>
-								<input type="text" id="stop-time-input" class="time-input" placeholder="es. 90 o 2:30">
-								<div id="stop-error" class="error-message">Deve essere maggiore del tempo inizio</div>
-							</div>
-						</div>
+                        <!-- Volume Control -->
+                        <div class="slider-control">
+                            <h4 class="slider-title">🔊 Volume</h4>
+                            <div class="slider-row">
+                                <input type="range" id="volume" class="slider" min="0" max="100" value="100" step="1">
+                                <input type="text" id="volume-input" class="text-input" value="100">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-						<div class="button-group">
-							<button id="start" class="btn btn-primary" data-start-value=''>📍 Dal Corrente</button>
-							<button id="stop" class="btn btn-primary" data-stop-value=''>🎯 Al Corrente</button>
-							<button id="reset" class="btn btn-danger">🔄 Reset Loop</button>
-						</div>
+            <!-- Loop Controls nella barra laterale -->
+            <section id="controls" class="loop-controls-sidebar">
+                <h3 class="sidebar-title">🔄 Controllo Loop</h3>
+                
+                <div class="loop-inputs">
+                    <div class="input-group">
+                        <label class="input-label">Tempo Inizio</label>
+                        <input type="text" id="start-time-input" class="time-input" placeholder="es. 30 o 1:30">
+                        <div id="start-error" class="error-message">Tempo non valido</div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Tempo Fine</label>
+                        <input type="text" id="stop-time-input" class="time-input" placeholder="es. 90 o 2:30">
+                        <div id="stop-error" class="error-message">Deve essere maggiore del tempo inizio</div>
+                    </div>
+                </div>
 
-						<div class="time-display">
-							<div class="time-item">
-								<span>Inizio:</span>
-								<span id="start-value" class="time-value">--:--</span>
-							</div>
-							<div class="time-item">
-								<span>Fine:</span>
-								<span id="stop-value" class="time-value">--:--</span>
-							</div>
-						</div>
-					</div>
+                <div class="button-group">
+                    <button id="start" class="btn btn-primary" data-start-value=''>📍 Dal Corrente</button>
+                    <button id="stop" class="btn btn-primary" data-stop-value=''>🎯 Al Corrente</button>
+                    <button id="reset" class="btn btn-danger">🔄 Reset Loop</button>
+                </div>
 
-				</div>
-			</section>
-		</div>
+                <div class="time-display">
+                    <div class="time-item">
+                        <span>Inizio:</span>
+                        <span id="start-value" class="time-value">--:--</span>
+                    </div>
+                    <div class="time-item">
+                        <span>Fine:</span>
+                        <span id="stop-value" class="time-value">--:--</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
 		<script src="script.js"></script>
 	</body>

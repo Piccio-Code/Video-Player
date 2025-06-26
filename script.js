@@ -66,26 +66,44 @@ function loadVideo(file) {
 }
 
 async function initializeTone(videoUrl) {
+    // Mostra loading
+    showLoading('Inizializzazione Tone.js...', 'Preparazione del contesto audio');
+    
+    let timeoutId;
     try {
+        // Timeout di 10 secondi
+        timeoutId = setTimeout(() => {
+            throw new Error('Timeout: inizializzazione troppo lenta');
+        }, 10000);
+
         // Inizializza Tone.js context se necessario
+        updateLoadingText('Avvio contesto audio...', 'Questo può richiedere qualche secondo');
         if (Tone.context.state !== 'running') {
             await Tone.start();
         }
 
         // Crea il player Tone.js con il video caricato
+        updateLoadingText('Creazione player audio...', 'Caricamento del file');
         player = new Tone.Player(videoUrl);
         pitch_shift = new Tone.PitchShift({}).toDestination();
 
         // Aspetta che Tone.js abbia caricato l'audio
+        updateLoadingText('Caricamento audio...', 'Analisi del file in corso');
         await Tone.loaded();
         
         // Connette il player al pitch shifter
+        updateLoadingText('Finalizzazione...', 'Connessione dei componenti');
         player.connect(pitch_shift);
+        
+        clearTimeout(timeoutId);
         
         isToneInitialized = true;
         
+        // Nasconde loading
+        hideLoading();
+        
         // Aggiungi animazione ai controlli
-        const controlsSection = document.querySelector('.controls-section');
+        const controlsSection = document.querySelector('.loop-controls-sidebar');
         controlsSection.classList.add('fade-in');
         
         // Carica le impostazioni salvate
@@ -93,8 +111,13 @@ async function initializeTone(videoUrl) {
         
         console.log('Tone.js inizializzato correttamente');
     } catch (error) {
+        clearTimeout(timeoutId);
         console.error('Errore nell\'inizializzazione di Tone.js:', error);
-        alert('Errore nell\'inizializzazione dell\'audio. Riprova.');
+        
+        hideLoading();
+        
+        // Mostra errore dettagliato
+        showErrorDialog(error.message);
     }
 }
 
@@ -135,12 +158,35 @@ function setupControlEventListeners() {
     const volumeSlider = document.getElementById('volume');
     const volumeInput = document.getElementById('volume-input');
 
+    // Pitch controls
     if (pitchSlider) pitchSlider.addEventListener('input', (e) => updatePitchOutput(e.target.value));
-    if (pitchInput) pitchInput.addEventListener('input', (e) => updatePitchOutput(e.target.value));
+    if (pitchInput) {
+        pitchInput.addEventListener('input', (e) => handleTextInputChange(e, 'pitch', -12, 12));
+        pitchInput.addEventListener('blur', (e) => validateAndUpdatePitch(e.target.value));
+        pitchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateAndUpdatePitch(e.target.value);
+        });
+    }
+
+    // Playback rate controls  
     if (playbackRateSlider) playbackRateSlider.addEventListener('input', (e) => updatePlaybackRateOutput(e.target.value));
-    if (playbackRateInput) playbackRateInput.addEventListener('input', (e) => updatePlaybackRateOutput(e.target.value));
+    if (playbackRateInput) {
+        playbackRateInput.addEventListener('input', (e) => handleTextInputChange(e, 'playback-rate', 10, 300));
+        playbackRateInput.addEventListener('blur', (e) => validateAndUpdatePlaybackRate(e.target.value));
+        playbackRateInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateAndUpdatePlaybackRate(e.target.value);
+        });
+    }
+
+    // Volume controls
     if (volumeSlider) volumeSlider.addEventListener('input', (e) => updateVolumeOutput(e.target.value));
-    if (volumeInput) volumeInput.addEventListener('input', (e) => updateVolumeOutput(e.target.value));
+    if (volumeInput) {
+        volumeInput.addEventListener('input', (e) => handleTextInputChange(e, 'volume', 0, 100));
+        volumeInput.addEventListener('blur', (e) => validateAndUpdateVolume(e.target.value));
+        volumeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateAndUpdateVolume(e.target.value);
+        });
+    }
 }
 
 function setupLoopEventListeners() {
@@ -261,6 +307,78 @@ function validateTimes() {
     return isValid;
 }
 
+// Funzioni di validazione per input text
+function handleTextInputChange(event, type, min, max) {
+    const value = event.target.value;
+    const numValue = Number(value);
+    
+    // Rimuovi stili di errore precedenti
+    event.target.classList.remove('input-error');
+    
+    // Se il valore è vuoto, non fare nulla
+    if (value === '') return;
+    
+    // Se non è un numero valido, aggiungi stile di errore
+    if (isNaN(numValue)) {
+        event.target.classList.add('input-error');
+        return;
+    }
+    
+    // Se è fuori range, aggiungi stile di errore
+    if (numValue < min || numValue > max) {
+        event.target.classList.add('input-error');
+        return;
+    }
+}
+
+function validateAndUpdatePitch(value) {
+    const numValue = Number(value);
+    const pitchInput = document.getElementById('pitch-input');
+    
+    if (isNaN(numValue) || value === '') {
+        // Ripristina l'ultimo valore valido
+        const pitchSlider = document.getElementById('pitch');
+        pitchInput.value = pitchSlider.value;
+        pitchInput.classList.remove('input-error');
+        return;
+    }
+    
+    updatePitchOutput(value);
+    pitchInput.classList.remove('input-error');
+}
+
+function validateAndUpdatePlaybackRate(value) {
+    const numValue = Number(value);
+    const playbackRateInput = document.getElementById('playback-rate-input');
+    
+    if (isNaN(numValue) || value === '') {
+        // Ripristina l'ultimo valore valido
+        const playbackRateSlider = document.getElementById('playback-rate');
+        playbackRateInput.value = playbackRateSlider.value;
+        playbackRateInput.classList.remove('input-error');
+        return;
+    }
+    
+    updatePlaybackRateOutput(value);
+    playbackRateInput.classList.remove('input-error');
+}
+
+function validateAndUpdateVolume(value) {
+    const numValue = Number(value);
+    const volumeInput = document.getElementById('volume-input');
+    
+    if (isNaN(numValue) || value === '') {
+        // Ripristina l'ultimo valore valido
+        const volumeSlider = document.getElementById('volume');
+        volumeInput.value = volumeSlider.value;
+        volumeInput.classList.remove('input-error');
+        return;
+    }
+    
+    updateVolumeOutput(value);
+    volumeInput.classList.remove('input-error');
+}
+
 // Funzioni per l'aggiornamento dei controlli
 function updatePitchOutput(value) {
     if (!isToneInitialized || !pitch_shift) return;
@@ -272,11 +390,9 @@ function updatePitchOutput(value) {
     const clampedValue = Math.max(-12, Math.min(parsedValue, 12));
 
     const pitchRange = document.getElementById('pitch');
-    const pitchOutput = document.getElementById('pitch-output');
     const pitchInput = document.getElementById('pitch-input');
 
     if (pitchRange) pitchRange.value = clampedValue;
-    if (pitchOutput) pitchOutput.textContent = clampedValue;
     if (pitchInput) pitchInput.value = clampedValue;
     
     pitch_shift.pitch = clampedValue;
@@ -293,11 +409,9 @@ function updatePlaybackRateOutput(value) {
     music.playbackRate = clampedValue / 100;
 
     const playbackRateRange = document.getElementById('playback-rate');
-    const playbackRateOutput = document.getElementById('playback-rate-output');
     const playbackRateInput = document.getElementById('playback-rate-input');
 
     if (playbackRateRange) playbackRateRange.value = clampedValue;
-    if (playbackRateOutput) playbackRateOutput.textContent = clampedValue;
     if (playbackRateInput) playbackRateInput.value = clampedValue;
     
     if (isToneInitialized && player) {
@@ -317,11 +431,9 @@ function updateVolumeOutput(value) {
     const clampedValue = Math.max(0, Math.min(parsedValue, 100));
 
     const volumeRange = document.getElementById('volume');
-    const volumeOutput = document.getElementById('volume-output');
     const volumeInput = document.getElementById('volume-input');
 
     if (volumeRange) volumeRange.value = clampedValue;
-    if (volumeOutput) volumeOutput.textContent = clampedValue;
     if (volumeInput) volumeInput.value = clampedValue;
     
     player.volume.value = clampedValue - 100;
@@ -357,31 +469,25 @@ function loadSavedSettings() {
 }
 
 function updateVolumeDisplay(value) {
-    const volumeOutput = document.getElementById('volume-output');
     const volumeInput = document.getElementById('volume-input');
     const volumeRange = document.getElementById('volume');
     
-    if (volumeOutput) volumeOutput.textContent = value;
     if (volumeInput) volumeInput.value = value;
     if (volumeRange) volumeRange.value = value;
 }
 
 function updatePitchDisplay(value) {
-    const pitchOutput = document.getElementById('pitch-output');
     const pitchInput = document.getElementById('pitch-input');
     const pitchRange = document.getElementById('pitch');
     
-    if (pitchOutput) pitchOutput.textContent = value;
     if (pitchInput) pitchInput.value = value;
     if (pitchRange) pitchRange.value = value;
 }
 
 function updatePlaybackRateDisplay(value) {
-    const playbackRateOutput = document.getElementById('playback-rate-output');
     const playbackRateInput = document.getElementById('playback-rate-input');
     const playbackRateRange = document.getElementById('playback-rate');
     
-    if (playbackRateOutput) playbackRateOutput.textContent = value;
     if (playbackRateInput) playbackRateInput.value = value;
     if (playbackRateRange) playbackRateRange.value = value;
 }
@@ -417,6 +523,74 @@ function resetLoop() {
     if (stopTimeInput) stopTimeInput.value = '';
     
     validateTimes();
+}
+
+// Gestione del loading
+function showLoading(mainText, subText) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    const loadingSubtext = document.querySelector('.loading-subtext');
+    const cancelButton = document.getElementById('loading-cancel');
+    
+    if (loadingText) loadingText.textContent = mainText;
+    if (loadingSubtext) loadingSubtext.textContent = subText;
+    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+    
+    // Gestione del bottone annulla
+    if (cancelButton) {
+        cancelButton.onclick = () => {
+            hideLoading();
+            // Reset dello stato
+            if (player) {
+                player.dispose();
+                player = null;
+            }
+            if (pitch_shift) {
+                pitch_shift.dispose();
+                pitch_shift = null;
+            }
+            isToneInitialized = false;
+        };
+    }
+}
+
+function updateLoadingText(mainText, subText) {
+    const loadingText = document.querySelector('.loading-text');
+    const loadingSubtext = document.querySelector('.loading-subtext');
+    
+    if (loadingText) loadingText.textContent = mainText;
+    if (loadingSubtext) loadingSubtext.textContent = subText;
+}
+
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+}
+
+function showErrorDialog(errorMessage) {
+    let userMessage = 'Errore nell\'inizializzazione dell\'audio.';
+    
+    if (errorMessage.includes('Timeout')) {
+        userMessage += '\n\nIl caricamento sta impiegando troppo tempo. Possibili cause:\n• File audio troppo grande\n• Connessione lenta\n• Problemi del browser';
+    } else if (errorMessage.includes('context')) {
+        userMessage += '\n\nProblema con il contesto audio del browser.\nProva a:\n• Ricaricare la pagina\n• Cliccare prima sul video\n• Usare un browser diverso';
+    } else if (errorMessage.includes('decode') || errorMessage.includes('format')) {
+        userMessage += '\n\nFormato audio non supportato.\nAssicurati che il video contenga audio valido.';
+    } else {
+        userMessage += `\n\nDettagli tecnici: ${errorMessage}`;
+    }
+    
+    userMessage += '\n\nVuoi riprovare?';
+    
+    if (confirm(userMessage)) {
+        // Riprova automaticamente
+        const videoFileInput = document.getElementById('video-file');
+        if (videoFileInput.files[0]) {
+            setTimeout(() => {
+                loadVideo(videoFileInput.files[0]);
+            }, 1000);
+        }
+    }
 }
 
 // Gestione del file upload personalizzato
