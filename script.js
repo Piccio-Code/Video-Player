@@ -23,10 +23,46 @@ function initializeEventListeners() {
         }
     });
 
+    // Aggiungi gestione Drag and Drop
+    setupDragAndDrop();
+
     // Event listeners per i controlli
     setupControlEventListeners();
     setupVideoEventListeners();
     setupLoopEventListeners();
+}
+
+function setupDragAndDrop() {
+    const dropZone = document.body;
+
+    dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.remove('drag-over');
+
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            // Assicurati che il file sia un video
+            if (file.type.startsWith('video/')) {
+                loadVideo(file);
+            } else {
+                alert('Per favore, trascina un file video valido.');
+            }
+        }
+    });
 }
 
 function loadVideo(file) {
